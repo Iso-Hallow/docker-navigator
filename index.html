@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐳 Docker Navigator</title>
+    <meta name="description" content="Полный справочник по Docker с поиском, схемами, избранным и экспортом. 80+ команд, HEALTHCHECK, multi-stage, production best practices.">
+    <meta name="author" content="Docker Navigator">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header h1::after {
+            content: "🏆";
+            font-size: 1.8rem;
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            color: #f59e0b;
+            margin-left: 10px;
+        }
+
+        .header p {
+            color: #94a3b8;
+        }
+
+        .stats-badge {
+            display: inline-flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat-item {
+            background: #1e293b;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #60a5fa;
+        }
+
+        .badge-gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .action-btns-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .float-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            color: #e2e8f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .float-btn:hover {
+            background: #334155;
+            transform: scale(1.05);
+        }
+
+        body.light-theme {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #0f172a;
+        }
+
+        body.light-theme .header,
+        body.light-theme .cmd-card,
+        body.light-theme .nav-tabs,
+        body.light-theme .favorites-bar,
+        body.light-theme .search-box,
+        body.light-theme .schema {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #cbd5e1;
+        }
+
+        body.light-theme .cmd-code,
+        body.light-theme .schema-diagram {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        body.light-theme .stat-item {
+            background: #e2e8f0;
+            color: #3b82f6;
+        }
+
+        body.light-theme .search-box input {
+            color: #0f172a;
+        }
+
+        body.light-theme .cmd-desc {
+            color: #475569;
+        }
+
+        body.light-theme .float-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            background: #1e293b;
+            border-radius: 50px;
+            padding: 5px;
+            border: 1px solid #334155;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 15px 20px;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #64748b;
+        }
+
+        .search-box button {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .search-box button:hover {
+            transform: scale(1.02);
+        }
+
+        .search-stats {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .nav-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 30px;
+            background: #1e293b;
+            padding: 12px 15px;
+            border-radius: 60px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 8px 14px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 30px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: #334155;
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .category {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .category.active {
+            display: block;
+        }
+
+        .cmd-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .cmd-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+        }
+
+        .cmd-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cmd-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            flex-wrap: wrap;
+        }
+
+        .cmd-title .icon {
+            font-size: 1.5rem;
+        }
+
+        .cmd-title h3 {
+            color: #60a5fa;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .cmd-code {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: pre;
+            word-break: normal;
+            margin: 12px 0;
+            border-left: 3px solid #3b82f6;
+            max-height: 300px;
+            scrollbar-width: thin;
+        }
+
+        .cmd-code::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .cmd-code::-webkit-scrollbar-track {
+            background: #0f172a;
+            border-radius: 3px;
+        }
+        .cmd-code::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        .cmd-code::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        .cmd-desc {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding: 8px 0;
+            display: block;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+            white-space: normal;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #334155;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-right: 5px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge:hover {
+            opacity: 0.8;
+        }
+
+        .schema {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid #334155;
+        }
+
+        .schema h3 {
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .schema-diagram {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+        }
+
+        .favorites-bar {
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 12px;
+            width: 50px;
+            cursor: pointer;
+            transition: width 0.3s;
+            overflow: hidden;
+            z-index: 100;
+            border: 1px solid #334155;
+            backdrop-filter: blur(10px);
+        }
+
+        .favorites-bar:hover {
+            width: 280px;
+        }
+
+        .favorites-bar .star-icon {
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .favorites-list {
+            display: none;
+            margin-top: 10px;
+            font-size: 0.75rem;
+        }
+
+        .favorites-bar:hover .favorites-list {
+            display: block;
+        }
+
+        .favorites-list div {
+            padding: 6px 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .favorites-list div:hover {
+            background: #334155;
+            color: #60a5fa;
+        }
+
+        .copy-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #3b82f6;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #3b82f6;
+        }
+
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            color: #64748b;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .cmd-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-tabs {
+                border-radius: 20px;
+            }
+            .favorites-bar {
+                display: none;
+            }
+            .shortcuts-hint {
+                display: none;
+            }
+        }
+
+        .highlight {
+            background-color: #f59e0b;
+            color: #0f172a;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        .new-badge {
+            background: #f59e0b;
+            color: #0f172a;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="mainTitle">🐳 Docker Navigator</h1>
+            <p id="mainDesc">Интерактивная шпаргалка · Поиск · Схемы · Избранное · 80+ команд · HEALTHCHECK · Multi-stage · Production best practices</p>
+            <div class="stats-badge" id="statsBadge"></div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Поиск... / - фокус | Например: healthcheck, multi-stage, docker run">
+                <button id="searchBtn">Найти</button>
+            </div>
+            <div class="search-stats" id="searchStats"></div>
+        </div>
+
+        <div class="export-buttons">
+            <button class="export-btn" id="exportJsonBtn">📤 Экспорт JSON</button>
+            <button class="export-btn" id="exportMarkdownBtn">📝 Экспорт MD</button>
+            <button class="export-btn" id="clearFavoritesBtn">🗑️ Очистить избранное</button>
+        </div>
+
+        <div class="nav-tabs" id="navTabs">
+            <button class="tab-btn active" data-cat="all" id="tab-all">📌 Все (81)</button>
+            <button class="tab-btn" data-cat="containers" id="tab-containers">📦 Контейнеры</button>
+            <button class="tab-btn" data-cat="images" id="tab-images">🖼️ Образы</button>
+            <button class="tab-btn" data-cat="dockerfile" id="tab-dockerfile">🐳 Dockerfile <span class="new-badge">+HEALTHCHECK</span></button>
+            <button class="tab-btn" data-cat="compose" id="tab-compose">🔗 Compose</button>
+            <button class="tab-btn" data-cat="volumes" id="tab-volumes">💾 Volumes</button>
+            <button class="tab-btn" data-cat="network" id="tab-network">🌐 Сети</button>
+            <button class="tab-btn" data-cat="advanced" id="tab-advanced">🔧 Продвинутые <span class="new-badge">+Production</span></button>
+            <button class="tab-btn" data-cat="schemas" id="tab-schemas">📊 Схемы <span class="new-badge">+CMD/ENTRYPOINT</span></button>
+        </div>
+
+        <div id="categoriesContainer"></div>
+
+        <div class="favorites-bar" id="favoritesBar">
+            <div class="star-icon">⭐</div>
+            <div class="favorites-list" id="favoritesList"></div>
+        </div>
+
+        <div class="shortcuts-hint" id="shortcutsHint">
+            ⌨️ / - поиск | F2 - тема | Esc - сброс
+        </div>
+
+        <div class="action-btns-container">
+            <div class="float-btn" id="langToggle" title="Change Language">🇷🇺 RU</div>
+            <div class="float-btn" id="themeToggle" title="Toggle Theme">🌓</div>
+        </div>
+
+        <footer id="footerText">
+            📘 Docker Navigator | 🏆 Интерактивная шпаргалка | Всего команд: 81 | HEALTHCHECK ✅ | Multi-stage ✅ | Production best practices ✅
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // ТЕКСТОВЫЕ КОНСТАНТЫ И ЛОКАЛИЗАЦИЯ (i18n)
+        // ============================================
+        const i18n = {
+            ru: {
+                mainDesc: "Интерактивная шпаргалка · Поиск · Схемы · Избранное · 80+ команд · HEALTHCHECK · Multi-stage · Production best practices",
+                searchPlaceholder: "🔍 Поиск... / - фокус | Например: healthcheck, multi-stage, docker run",
+                searchBtn: "Найти",
+                exportJson: "📤 Экспорт JSON",
+                exportMd: "📝 Экспорт MD",
+                clearFav: "🗑️ Очистить избранное",
+                tabAll: "📌 Все",
+                tabContainers: "📦 Контейнеры",
+                tabImages: "🖼️ Образы",
+                tabDockerfile: "🐳 Dockerfile",
+                tabCompose: "🔗 Compose",
+                tabVolumes: "💾 Volumes",
+                tabNetwork: "🌐 Сети",
+                tabAdvanced: "🔧 Продвинутые",
+                tabSchemas: "📊 Схемы",
+                shortcutsHint: "⌨️ / - поиск | F2 - тема | Esc - сброс",
+                footerText: "📘 Docker Navigator | 🏆 Интерактивная шпаргалка | Всего команд: 81 | HEALTHCHECK ✅ | Multi-stage ✅ | Production best practices ✅",
+                favTitle: "⭐ Избранное",
+                favEmpty: "Нет избранного",
+                statTotal: "📦 Всего команд:",
+                statFavs: "⭐ Избранное:",
+                statBadge: "🏆 Лучший чит-лист",
+                addedFav: "★ В избранном",
+                addFav: "☆ Добавить",
+                notFound: "Ничего не найдено по запросу",
+                foundItems: "🔍 Найдено:",
+                itemsQuery: "элементов по запросу",
+                totalLabel: "📚 Всего команд:"
+            },
+            en: {
+                mainDesc: "The Ultimate Cheatsheet · Search · Diagrams · Favorites · 80+ commands · HEALTHCHECK · Multi-stage · Production ready",
+                searchPlaceholder: "🔍 Search... / to focus | e.g.: healthcheck, multi-stage, docker run",
+                searchBtn: "Search",
+                exportJson: "📤 Export JSON",
+                exportMd: "📝 Export MD",
+                clearFav: "🗑️ Clear Favorites",
+                tabAll: "📌 All",
+                tabContainers: "📦 Containers",
+                tabImages: "🖼️ Images",
+                tabDockerfile: "🐳 Dockerfile",
+                tabCompose: "🔗 Compose",
+                tabVolumes: "💾 Volumes",
+                tabNetwork: "🌐 Networks",
+                tabAdvanced: "🔧 Advanced",
+                tabSchemas: "📊 Diagrams",
+                shortcutsHint: "⌨️ / - search | F2 - theme | Esc - reset",
+                footerText: "📘 Docker Navigator | 🏆 The Ultimate Cheatsheet | Total commands: 81 | HEALTHCHECK ✅ | Multi-stage ✅ | Production best practices ✅",
+                favTitle: "⭐ Favorites",
+                favEmpty: "No favorites",
+                statTotal: "📦 Total commands:",
+                statFavs: "⭐ Favorites:",
+                statBadge: "🏆 Top Cheatsheet",
+                addedFav: "★ Favorited",
+                addFav: "☆ Add to Fav",
+                notFound: "Nothing found for",
+                foundItems: "🔍 Found:",
+                itemsQuery: "items for query",
+                totalLabel: "📚 Total commands:"
+            }
+        };
+
+        let currentLang = localStorage.getItem("dockerLang") || "ru";
+        
+        const categoryTitles = {
+            containers: { ru: "📦 Контейнеры", en: "📦 Containers" },
+            images: { ru: "🖼️ Образы", en: "🖼️ Images" },
+            dockerfile: { ru: "🐳 Dockerfile", en: "🐳 Dockerfile" },
+            compose: { ru: "🔗 Docker Compose", en: "🔗 Docker Compose" },
+            volumes: { ru: "💾 Volumes", en: "💾 Volumes" },
+            network: { ru: "🌐 Сети", en: "🌐 Networks" },
+            advanced: { ru: "🔧 Продвинутые команды", en: "🔧 Advanced Commands" },
+            schemas: { ru: "📊 Визуальные схемы", en: "📊 Visual Diagrams" }
+        };
+
+        // ============================================
+        // ПОЛНАЯ БАЗА КОМАНД (ДВУЯЗЫЧНАЯ)
+        // ============================================
+        const commands = [
+            // ========== КОНТЕЙНЕРЫ (14) ==========
+            { category: "containers", title: "Запуск контейнера", title_en: "Run container", command: "docker run -d -p 8080:80 --name my-container nginx", description: "Запустить контейнер в фоне с пробросом порта", description_en: "Run a container in the background with port mapping" },
+            { category: "containers", title: "Просмотр контейнеров", title_en: "View containers", command: "docker ps", description: "Список запущенных контейнеров", description_en: "List all running containers" },
+            { category: "containers", title: "Все контейнеры", title_en: "All containers", command: "docker ps -a", description: "Список всех контейнеров (включая остановленные)", description_en: "List all containers (including stopped ones)" },
+            { category: "containers", title: "Остановить контейнер", title_en: "Stop container", command: "docker stop CONTAINER", description: "Остановить работающий контейнер", description_en: "Stop a running container gracefully" },
+            { category: "containers", title: "Запустить контейнер", title_en: "Start container", command: "docker start CONTAINER", description: "Запустить остановленный контейнер", description_en: "Start a stopped container" },
+            { category: "containers", title: "Перезапустить", title_en: "Restart container", command: "docker restart CONTAINER", description: "Перезапустить контейнер", description_en: "Restart a container" },
+            { category: "containers", title: "Удалить контейнер", title_en: "Remove container", command: "docker rm CONTAINER", description: "Удалить остановленный контейнер", description_en: "Remove a stopped container" },
+            { category: "containers", title: "Принудительное удаление", title_en: "Force remove", command: "docker rm -f CONTAINER", description: "Удалить работающий контейнер", description_en: "Force remove a running container" },
+            { category: "containers", title: "Массовое удаление", title_en: "Mass remove", command: "docker rm $(docker ps -aq)", description: "Удалить ВСЕ контейнеры", description_en: "Remove ALL containers from the system" },
+            { category: "containers", title: "Приостановить", title_en: "Pause container", command: "docker pause CONTAINER", description: "Приостановить все процессы", description_en: "Pause all processes within a container" },
+            { category: "containers", title: "Возобновить", title_en: "Unpause container", command: "docker unpause CONTAINER", description: "Возобновить приостановленный контейнер", description_en: "Unpause a paused container" },
+            { category: "containers", title: "Создать без запуска", title_en: "Create without starting", command: "docker create --name my-nginx nginx", description: "Создать контейнер (не запускать)", description_en: "Create a container but do not start it" },
+            { category: "containers", title: "Переименовать", title_en: "Rename container", command: "docker rename old-name new-name", description: "Изменить имя контейнера", description_en: "Change the name of a container" },
+            { category: "containers", title: "Подключиться к консоли", title_en: "Attach to console", command: "docker attach CONTAINER", description: "Подключиться к работающему контейнеру (выход Ctrl+P,Q)", description_en: "Attach local standard input, output, and error streams (detach with Ctrl+P,Q)" },
+            
+            // ========== ОБРАЗЫ (13) ==========
+            { category: "images", title: "Список образов", title_en: "List images", command: "docker images", description: "Показать все локальные образы", description_en: "Show all local images" },
+            { category: "images", title: "Поиск образа", title_en: "Search image", command: "docker search nginx", description: "Поиск образов в Docker Hub", description_en: "Search for images on Docker Hub" },
+            { category: "images", title: "Скачать образ", title_en: "Pull image", command: "docker pull nginx:alpine", description: "Скачать образ из реестра", description_en: "Download an image from a registry" },
+            { category: "images", title: "Загрузить образ", title_en: "Push image", command: "docker push myuser/myimage:tag", description: "Загрузить образ в реестр", description_en: "Upload an image to a registry" },
+            { category: "images", title: "Удалить образ", title_en: "Remove image", command: "docker rmi IMAGE", description: "Удалить локальный образ", description_en: "Remove a local image" },
+            { category: "images", title: "Собрать образ", title_en: "Build image", command: "docker build -t my-image:latest .", description: "Собрать образ из Dockerfile", description_en: "Build an image from a Dockerfile" },
+            { category: "images", title: "Сохранить образ в файл", title_en: "Save image to tar", command: "docker save my-image:latest -o my-image.tar", description: "Сохранить образ для переноса", description_en: "Save one or more images to a tar archive" },
+            { category: "images", title: "Загрузить из файла", title_en: "Load image from tar", command: "docker load -i my-image.tar", description: "Загрузить образ из tar-файла", description_en: "Load an image from a tar archive" },
+            { category: "images", title: "История образа", title_en: "Image history", command: "docker history IMAGE", description: "Показать слои образа", description_en: "Show the history of an image layers" },
+            { category: "images", title: "Коммит контейнера", title_en: "Commit container", command: "docker commit CONTAINER new-image:tag", description: "Создать образ из контейнера", description_en: "Create a new image from a container's changes" },
+            { category: "images", title: "Инспектировать образ", title_en: "Inspect image", command: "docker inspect IMAGE", description: "Детальная информация об образе", description_en: "Display detailed information on one or more images" },
+            { category: "images", title: "Тегирование образа", title_en: "Tag image", command: "docker tag IMAGE new-name:tag", description: "Создать новый тег для образа", description_en: "Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE" },
+            { category: "images", title: "Показать все образы", title_en: "Show all images", command: "docker images -a", description: "Все образы, включая промежуточные", description_en: "Show all images, including intermediate image layers" },
+            
+            // ========== DOCKERFILE (16) ==========
+            { category: "dockerfile", title: "FROM", title_en: "FROM", command: "FROM ubuntu:22.04", description: "Базовый образ (обязательная инструкция)", description_en: "Base image (mandatory instruction)" },
+            { category: "dockerfile", title: "RUN", title_en: "RUN", command: "RUN apt-get update && apt-get install -y nginx", description: "Выполнить команду при сборке", description_en: "Execute a command during build process" },
+            { category: "dockerfile", title: "COPY", title_en: "COPY", command: "COPY . /app", description: "Копировать файлы из хоста в образ", description_en: "Copy files from host to the container image" },
+            { category: "dockerfile", title: "ADD", title_en: "ADD", command: "ADD https://example.com/file.tar.gz /tmp/", description: "Копировать из URL или распаковать архив", description_en: "Copy from URL or auto-extract archives" },
+            { category: "dockerfile", title: "WORKDIR", title_en: "WORKDIR", command: "WORKDIR /app", description: "Установить рабочую директорию", description_en: "Set the working directory" },
+            { category: "dockerfile", title: "EXPOSE", title_en: "EXPOSE", command: "EXPOSE 80", description: "Указать порт (документация)", description_en: "Document which ports are intended to be published" },
+            { category: "dockerfile", title: "CMD", title_en: "CMD", command: "CMD [\"nginx\", \"-g\", \"daemon off;\"]", description: "Команда по умолчанию (переопределяется)", description_en: "Default command (can be overridden at runtime)" },
+            { category: "dockerfile", title: "ENTRYPOINT", title_en: "ENTRYPOINT", command: "ENTRYPOINT [\"/app/start.sh\"]", description: "Фиксированная команда", description_en: "Fixed executable command" },
+            { category: "dockerfile", title: "ENV", title_en: "ENV", command: "ENV NODE_ENV=production", description: "Переменные окружения", description_en: "Set environment variables" },
+            { category: "dockerfile", title: "VOLUME", title_en: "VOLUME", command: "VOLUME [\"/data\"]", description: "Создать точку монтирования тома", description_en: "Create a mount point for external volumes" },
+            { category: "dockerfile", title: "LABEL", title_en: "LABEL", command: "LABEL maintainer=\"email@example.com\"", description: "Метаданные образа", description_en: "Add metadata to an image" },
+            { category: "dockerfile", title: "ARG", title_en: "ARG", command: "ARG VERSION=latest", description: "Переменная времени сборки (не сохраняется в образ)", description_en: "Build-time variable (not persisted in the final image)" },
+            { category: "dockerfile", title: "HEALTHCHECK", title_en: "HEALTHCHECK", command: `HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
+  CMD curl -f http://localhost/ || exit 1`, description: "Проверка здоровья контейнера - аналог liveness probe в Kubernetes", description_en: "Container health check - equivalent to Kubernetes liveness probe" },
+            { category: "dockerfile", title: "USER", title_en: "USER", command: "USER 1000:1000", description: "Запуск от не-root пользователя (безопасность)", description_en: "Run as non-root user (security best practice)" },
+            { category: "dockerfile", title: "SHELL", title_en: "SHELL", command: "SHELL [\"/bin/bash\", \"-c\"]", description: "Смена shell по умолчанию для RUN команд", description_en: "Change default shell used for RUN commands" },
+            { category: "dockerfile", title: "Multi-stage build", title_en: "Multi-stage build", command: `# Этап 1 / Stage 1: Builder
+FROM golang:1.19 AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o myapp
+
+# Этап 2 / Stage 2: Final Image
+FROM alpine:latest
+COPY --from=builder /app/myapp /usr/local/bin/
+CMD ["myapp"]`, description: "Многоступенчатая сборка - уменьшает размер образа в 10-100 раз", description_en: "Multi-stage build - reduces final image size by 10-100x" },
+            
+            // ========== DOCKER COMPOSE (14) ==========
+            { category: "compose", title: "Запуск Compose", title_en: "Start Compose", command: "docker-compose up -d", description: "Запустить все сервисы в фоне", description_en: "Start all services in the background (detached mode)" },
+            { category: "compose", title: "Остановка", title_en: "Stop & Remove", command: "docker-compose down", description: "Остановить и удалить контейнеры", description_en: "Stop and remove containers, networks, and images" },
+            { category: "compose", title: "Статус", title_en: "Status", command: "docker-compose ps", description: "Показать статус сервисов", description_en: "List running services and status" },
+            { category: "compose", title: "Логи", title_en: "Logs", command: "docker-compose logs -f", description: "Смотреть логи всех сервисов", description_en: "Follow log output of all services" },
+            { category: "compose", title: "Войти в контейнер Compose", title_en: "Exec into service", command: "docker-compose exec app bash", description: "Выполнить команду в контейнере", description_en: "Execute a command inside a running service" },
+            { category: "compose", title: "Пересобрать", title_en: "Rebuild services", command: "docker-compose build", description: "Пересобрать образы сервисов", description_en: "Rebuild or build service images" },
+            { category: "compose", title: "Проверить конфиг", title_en: "Check config", command: "docker-compose config", description: "Проверить валидность yml файла", description_en: "Validate and view the Compose file" },
+            { category: "compose", title: "Процессы Compose", title_en: "Top processes", command: "docker-compose top", description: "Показать процессы во всех сервисах", description_en: "Display the running processes in services" },
+            { category: "compose", title: "Перезапустить сервис", title_en: "Restart service", command: "docker-compose restart service", description: "Перезапустить конкретный сервис", description_en: "Restart a specific service" },
+            { category: "compose", title: "Приостановить все", title_en: "Pause services", command: "docker-compose pause", description: "Приостановить все сервисы", description_en: "Pause all running services" },
+            { category: "compose", title: "Обновить образы", title_en: "Pull images", command: "docker-compose pull", description: "Скачать свежие версии образов", description_en: "Pull fresh images for services" },
+            { category: "compose", title: "Масштабирование", title_en: "Scale services", command: "docker-compose scale app=3", description: "Запустить несколько копий сервиса", description_en: "Run multiple replicas of a service" },
+            { category: "compose", title: "Базовая структура", title_en: "Basic structure", command: `version: '3.8'
+services:
+  web:
+    image: nginx
+    ports: ["80:80"]`, description: "Минимальный docker-compose.yml", description_en: "Minimal docker-compose.yml structure" },
+            { category: "compose", title: "Полный пример", title_en: "Full example", command: `version: '3.8'
+services:
+  web:
+    build: .
+    ports: ["3000:3000"]
+    environment: ["NODE_ENV=dev"]
+    depends_on: [db]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+  db:
+    image: postgres:15
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes:
+  pgdata:`, description: "Веб-приложение + база данных + healthcheck", description_en: "Web App + Database + Healthcheck setup" },
+            
+            // ========== VOLUMES (8) ==========
+            { category: "volumes", title: "Именованный том", title_en: "Named volume", command: "docker run -v my_data:/app/data nginx", description: "Создать и смонтировать том", description_en: "Create and mount a named volume" },
+            { category: "volumes", title: "Bind mount", title_en: "Bind mount", command: "docker run -v $(pwd):/app nginx", description: "Монтировать папку хоста", description_en: "Mount a host directory into the container" },
+            { category: "volumes", title: "--mount синтаксис", title_en: "--mount syntax", command: "docker run --mount source=myvol,target=/app nginx", description: "Современный синтаксис (рекомендуется)", description_en: "Modern explicit syntax (recommended)" },
+            { category: "volumes", title: "Список томов", title_en: "List volumes", command: "docker volume ls", description: "Показать все тома", description_en: "List all docker volumes" },
+            { category: "volumes", title: "Создать том", title_en: "Create volume", command: "docker volume create my-volume", description: "Создать именованный том", description_en: "Create a new named volume manually" },
+            { category: "volumes", title: "Удалить том", title_en: "Remove volume", command: "docker volume rm my-volume", description: "Удалить том", description_en: "Remove a volume" },
+            { category: "volumes", title: "Очистить тома", title_en: "Prune volumes", command: "docker volume prune", description: "Удалить неиспользуемые тома", description_en: "Remove all unused local volumes" },
+            { category: "volumes", title: "Информация о томе", title_en: "Inspect volume", command: "docker volume inspect my-volume", description: "Детальная информация о томе", description_en: "Display detailed information on a volume" },
+            
+            // ========== СЕТИ (7) ==========
+            { category: "network", title: "Список сетей", title_en: "List networks", command: "docker network ls", description: "Показать все сети", description_en: "List all networks" },
+            { category: "network", title: "Создать сеть", title_en: "Create network", command: "docker network create my-network", description: "Создать пользовательскую сеть", description_en: "Create a custom network" },
+            { category: "network", title: "Подключить контейнер", title_en: "Connect container", command: "docker network connect my-network container", description: "Подключить контейнер к сети", description_en: "Connect a container to a network" },
+            { category: "network", title: "Отключить контейнер", title_en: "Disconnect container", command: "docker network disconnect my-network container", description: "Отключить контейнер от сети", description_en: "Disconnect a container from a network" },
+            { category: "network", title: "Удалить сеть", title_en: "Remove network", command: "docker network rm my-network", description: "Удалить сеть", description_en: "Remove a network" },
+            { category: "network", title: "Инспектировать сеть", title_en: "Inspect network", command: "docker network inspect my-network", description: "Информация о сети", description_en: "Display detailed information on a network" },
+            { category: "network", title: "Запуск в сети", title_en: "Run in network", command: "docker run --network my-network nginx", description: "Запустить контейнер в определенной сети", description_en: "Run a container and attach it to a specific network" },
+            
+            // ========== ПРОДВИНУТЫЕ (13) ==========
+            { category: "advanced", title: "Войти в контейнер (Advanced)", title_en: "Exec into container", command: "docker exec -it CONTAINER bash", description: "Интерактивная оболочка", description_en: "Open an interactive shell inside a running container" },
+            { category: "advanced", title: "Копировать файлы", title_en: "Copy files", command: "docker cp ./file.txt container:/path/", description: "Копирование между хостом и контейнером", description_en: "Copy files/folders between a container and the local filesystem" },
+            { category: "advanced", title: "Логи контейнера", title_en: "Container logs", command: "docker logs -f CONTAINER", description: "Следить за логами", description_en: "Fetch the logs of a container" },
+            { category: "advanced", title: "Логи за период", title_en: "Logs by period", command: "docker logs --since 2024-01-01 CONTAINER", description: "Логи с определенной даты", description_en: "Show logs since a specific timestamp" },
+            { category: "advanced", title: "Информация", title_en: "Inspect info", command: "docker inspect CONTAINER", description: "Полная информация JSON", description_en: "Return low-level information on Docker objects (JSON)" },
+            { category: "advanced", title: "Изменения в контейнере", title_en: "Container diff", command: "docker diff CONTAINER", description: "Показать измененные файлы", description_en: "Inspect changes to files or directories on a container's filesystem" },
+            { category: "advanced", title: "Статистика", title_en: "Stats", command: "docker stats", description: "Использование ресурсов в реальном времени", description_en: "Display a live stream of container(s) resource usage statistics" },
+            { category: "advanced", title: "Процессы", title_en: "Top processes", command: "docker top CONTAINER", description: "Показать процессы внутри", description_en: "Display the running processes of a container" },
+            { category: "advanced", title: "Ограничение ресурсов", title_en: "Resource limits", command: "docker run --memory=512m --cpus=1 nginx", description: "Ограничить память и CPU", description_en: "Limit Memory and CPU usage for a container" },
+            { category: "advanced", title: "Production чеклист 🔒", title_en: "Production checklist 🔒", command: `# 1. USER non-root
+# 2. .dockerignore
+# 3. Tags (not latest) / Конкретные теги
+# 4. HEALTHCHECK
+# 5. Resource limits / Ограничения --memory=512m
+# 6. Cleanup in RUN / Удаление кэша в RUN
+# 7. No secrets in ENV / Без секретов в ENV
+# 8. --restart=unless-stopped`, description: "8 золотых правил production Docker", description_en: "8 golden rules for Docker in production" },
+            { category: "advanced", title: "Очистка системы", title_en: "System prune", command: "docker system prune -a", description: "Удалить все неиспользуемое", description_en: "Remove all unused containers, networks, images (both dangling and unreferenced)" },
+            { category: "advanced", title: "Безопасная очистка 🧹", title_en: "Safe clean 🧹", command: `# Show space usage
+docker system df -v
+
+# Remove stopped containers
+docker container prune
+
+# Remove unused images
+docker image prune -a
+
+# Remove ALL (CAUTION! Removes volumes too)
+docker system prune -a --volumes`, description: "Очистка диска с пояснениями - что каждый prune удаляет", description_en: "Disk cleanup with explanations of what each prune does" },
+            { category: "advanced", title: "Переменные окружения", title_en: "Env variables", command: "docker run -e VAR=value -e DEBUG=1 nginx", description: "Установить переменные", description_en: "Set environment variables during run" },
+            { category: "advanced", title: "Файл с переменными", title_en: "Env file", command: "docker run --env-file .env nginx", description: "Загрузить переменные из файла", description_en: "Read in a file of environment variables" },
+        
+            { category: "advanced", title: "🔒 Безопасность Docker", title_en: "🔒 Docker Security", command: `# 1. Do not run as root
+USER 1000:1000
+
+# 2. Vulnerability scanning
+docker scan IMAGE
+
+# 3. Image signing
+docker trust sign IMAGE
+docker trust inspect IMAGE
+
+# 4. Seccomp profiles
+docker run --security-opt seccomp=/path/to/profile.json
+
+# 5. Capabilities restriction
+docker run --cap-drop=ALL --cap-add=NET_ADMIN
+
+# 6. .dockerignore - exclude secrets`, description: "6 практик безопасности Docker - защита контейнеров", description_en: "6 Docker security practices to protect your containers" },
+            { category: "advanced", title: "⚡ BuildKit - ускорение сборки", title_en: "⚡ BuildKit Setup", command: `# Enable BuildKit
+export DOCKER_BUILDKIT=1
+
+# Dependency caching (speeds up 5-10x)
+RUN --mount=type=cache,target=/root/.cache/go-build go build
+
+# Apt package caching
+RUN --mount=type=cache,target=/var/cache/apt apt-get update && apt-get install -y curl
+
+# Parallel build
+docker build --parallel -t myapp .
+
+# Secure secrets in build (not stored in image)
+RUN --mount=type=secret,id=github_token cat /run/secrets/github_token`, description: "Ускорение сборки образов в 2-10 раз + безопасная передача секретов", description_en: "Speed up image builds 2-10x + securely inject secrets" },
+        ];
+
+        // СХЕМЫ (ДВУЯЗЫЧНЫЕ)
+        const schemas = [
+            { 
+                title: "🔌 Проброс портов (Port Mapping)", 
+                title_en: "🔌 Port Mapping", 
+                diagram: `
+Хост (localhost) ──────▶ Контейнер
+       │                     │
+       ▼                     ▼
+    ┌─────┐               ┌─────┐
+    │:8080│ ───────────── │ :80 │  nginx
+    └─────┘               └─────┘
+    
+    docker run -p 8080:80 nginx
+    📌 Формат: -p ПОРТ_ХОСТА:ПОРТ_КОНТЕЙНЕРА`,
+                diagram_en: `
+Host (localhost) ──────▶ Container
+       │                     │
+       ▼                     ▼
+    ┌─────┐               ┌─────┐
+    │:8080│ ───────────── │ :80 │  nginx
+    └─────┘               └─────┘
+    
+    docker run -p 8080:80 nginx
+    📌 Format: -p HOST_PORT:CONTAINER_PORT`
+            },
+            
+            { 
+                title: "💾 Volumes: Сохранение данных", 
+                title_en: "💾 Volumes: Data Persistence", 
+                diagram: `
+docker run 
+-v pgdata:/var/lib/postgresql/data postgres
+    
+Хост                 Контейнер
+┌──────────────┐    ┌──────────────┐
+│ Том: pgdata  │◀─▶│ /var/lib/... │ PostgreSQL
+└──────────────┘    └──────────────┘
+    
+Данные сохраняются даже после удаления контейнера
+Три способа: -v, --mount, bind mount`,
+                diagram_en: `
+docker run 
+-v pgdata:/var/lib/postgresql/data postgres
+    
+Host                 Container
+┌──────────────┐    ┌──────────────┐
+│ Vol: pgdata  │◀─▶│ /var/lib/... │ PostgreSQL
+└──────────────┘    └──────────────┘
+    
+Data persists even after container removal
+Three ways: -v, --mount, bind mount`
+            },
+            
+            { 
+                title: "🎯 CMD vs ENTRYPOINT - в чем разница?", 
+                title_en: "🎯 CMD vs ENTRYPOINT - What's the diff?", 
+                diagram: `
+┌───────────────────────────────────────────────┐
+│ENTRYPOINT ["app"] → Всегда запускает "app"    │
+├───────────────────────────────────────────────┤
+│CMD ["--help"]                                 │
+│→ Можно переопределить при запуске             │
+├───────────────────────────────────────────────┤
+│docker run image           → app               │
+│docker run image --help    → app --help        │
+│docker run image /bin/bash → app /bin/bash     │
+│                                               │
+│* docker run image                             │
+│--help (не переопределит ENTRYPOINT)           │
+│                                               │
+│* Совет по использованию:                      │
+│ ENTRYPOINT для фиксированной команды,         │
+│ CMD для аргументов по умолчанию               │
+└───────────────────────────────────────────────┘`,
+                diagram_en: `
+┌───────────────────────────────────────────────┐
+│ENTRYPOINT ["app"] → Always runs "app"         │
+├───────────────────────────────────────────────┤
+│CMD ["--help"]                                 │
+│→ Can be overridden at runtime                 │
+├───────────────────────────────────────────────┤
+│docker run image           → app               │
+│docker run image --help    → app --help        │
+│docker run image /bin/bash → app /bin/bash     │
+│                                               │
+│* docker run image                             │
+│--help (will not override ENTRYPOINT)          │
+│                                               │
+│* Tip:                                         │
+│ Use ENTRYPOINT for main executable,           │
+│ Use CMD for default arguments                 │
+└───────────────────────────────────────────────┘`
+            },
+            
+            { 
+                title: "🏗️ Multi-stage build визуализация", 
+                title_en: "🏗️ Multi-stage build visualization", 
+                diagram: `
+Обычный образ (800MB)  Multi-stage (10MB)
+┌─────────────────┐   ┌─────────────┐
+│ Go compiler     │   │Go compiler  │
+│ + зависимости   │   │+ зависимости│
+│ + исходники     │   └─────┬───────┘
+│ + бинарник      │         │
+│ + alpine        │         ▼ COPY --from=builder
+└─────────────────┘  ┌─────────────────┐
+                     │alpine + бинарник│
+                     └─────────────────┘
+    
+📌 Уменьшение размера в 10-100 раз!`,
+                diagram_en: `
+Regular Image (800MB)  Multi-stage (10MB)
+┌─────────────────┐   ┌─────────────┐
+│ Go compiler     │   │Go compiler  │
+│ + dependencies  │   │+ deps       │
+│ + source code   │   └─────┬───────┘
+│ + binary        │         │
+│ + alpine        │         ▼ COPY --from=builder
+└─────────────────┘  ┌─────────────────┐
+                     │alpine + binary  │
+                     └─────────────────┘
+
+📌 Reduces image size by 10-100x!`
+            },
+            
+            { 
+                title: "🩺 HEALTHCHECK как это работает", 
+                title_en: "🩺 HEALTHCHECK how it works", 
+                diagram: `
+Контейнер запущен
+       │
+       ▼
+┌─────────────┐
+│  Starting   │ ← start-period (5s) не проверяем
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Healthy    │ ← интервал 30с
+└──────┬──────┘
+       │ (если curl не ответил)
+       ▼
+┌─────────────┐
+│ Unhealthy   │ ← retries=3, timeout=3s
+└──────┬──────┘
+       │
+       ▼
+Контейнер перезапускается 
+(если restart: always)`,
+                diagram_en: `
+Container starts
+       │
+       ▼
+┌─────────────┐
+│  Starting   │ ← start-period (5s) ignored
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Healthy    │ ← interval 30s
+└──────┬──────┘
+       │ (if curl fails)
+       ▼
+┌─────────────┐
+│ Unhealthy   │ ← retries=3, timeout=3s
+└──────┬──────┘
+       │
+       ▼
+Container restarts
+(if restart: always)`
+            },
+            { 
+                title: "🐙 Docker Compose v1 vs v2 - в чем разница?", 
+                title_en: "🐙 Docker Compose v1 vs v2", 
+                diagram: `
+┌───────────────────────────────────────────────┐
+│         v1                                    │
+│ (старый, отдельный               v2           │
+│       инарник)         (новый, плагин Docker) │
+│ ────────────────────  ────────────────────────│
+│ docker-compose up     docker compose up       │
+│ docker-compose down   docker compose down     │
+│ docker-compose ps     docker compose ps       │
+├───────────────────────────────────────────────┤
+│* Как проверить:                               │
+│docker-compose --version → v1.29.2 (устаревший)│
+│docker compose version → v2.24.0  (современный)│
+│                                               │
+│* Совет: Используйте 'docker compose'          │
+│без дефиса)│-это  встроенный плагин, быстрее и │
+│актуальнее                                     │
+└───────────────────────────────────────────────┘`,
+                diagram_en: `
+┌───────────────────────────────────────────────┐
+│         v1                                    │
+│ (old, standalone                 v2           │
+│      binary)           (new, Docker plugin)   │
+│ ────────────────────  ────────────────────────│
+│ docker-compose up     docker compose up       │
+│ docker-compose down   docker compose down     │
+│ docker-compose ps     docker compose ps       │
+├───────────────────────────────────────────────┤
+│* How to check:                                │
+│docker-compose --version → v1.29.2 (legacy)    │
+│docker compose version → v2.24.0   (modern)    │
+│                                               │
+│* Tip: Use 'docker compose' (without dash).    │
+│It's a built-in plugin, faster and supported.  │
+└───────────────────────────────────────────────┘`
+            },
+        ];
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+        let currentCategory = "all";
+        let searchQuery = "";
+        let favorites = JSON.parse(localStorage.getItem("dockerFavorites") || "[]");
+        let isDarkTheme = true;
+
+        function applyLanguage() {
+            const t = i18n[currentLang];
+            
+            document.getElementById("mainDesc").textContent = t.mainDesc;
+            document.getElementById("searchInput").placeholder = t.searchPlaceholder;
+            document.getElementById("searchBtn").textContent = t.searchBtn;
+            document.getElementById("exportJsonBtn").textContent = t.exportJson;
+            document.getElementById("exportMarkdownBtn").textContent = t.exportMd;
+            document.getElementById("clearFavoritesBtn").textContent = t.clearFav;
+            
+            document.getElementById("tab-all").innerHTML = `${t.tabAll} (${commands.length})`;
+            document.getElementById("tab-containers").innerHTML = t.tabContainers;
+            document.getElementById("tab-images").innerHTML = t.tabImages;
+            document.getElementById("tab-dockerfile").innerHTML = `${t.tabDockerfile} <span class="new-badge">+HEALTHCHECK</span>`;
+            document.getElementById("tab-compose").innerHTML = t.tabCompose;
+            document.getElementById("tab-volumes").innerHTML = t.tabVolumes;
+            document.getElementById("tab-network").innerHTML = t.tabNetwork;
+            document.getElementById("tab-advanced").innerHTML = `${t.tabAdvanced} <span class="new-badge">+Production</span>`;
+            document.getElementById("tab-schemas").innerHTML = `${t.tabSchemas} <span class="new-badge">+CMD/ENTRYPOINT</span>`;
+            
+            document.getElementById("shortcutsHint").textContent = t.shortcutsHint;
+            document.getElementById("footerText").textContent = t.footerText;
+
+            const langBtn = document.getElementById("langToggle");
+            langBtn.textContent = currentLang === "ru" ? "🇷🇺 RU" : "🇬🇧 EN";
+
+            renderContent();
+            updateStatsBadge();
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === "ru" ? "en" : "ru";
+            localStorage.setItem("dockerLang", currentLang);
+            applyLanguage();
+        }
+
+        function saveFavorites() {
+            localStorage.setItem("dockerFavorites", JSON.stringify(favorites));
+            updateFavoritesUI();
+            updateStatsBadge();
+        }
+
+        function toggleFavorite(ruTitle) {
+            const commandExists = commands.some(cmd => cmd.title === ruTitle);
+            if (!commandExists) return;
+        
+            const index = favorites.indexOf(ruTitle);
+            if (index === -1) {
+                favorites.push(ruTitle);
+            } else {
+                favorites.splice(index, 1);
+            }
+            saveFavorites();
+            renderContent();
+            updateStatsBadge();
+        }
+
+        function updateFavoritesUI() {
+            const container = document.getElementById("favoritesList");
+            if (!container) return;
+            
+            const t = i18n[currentLang];
+            container.innerHTML = `<div style="color:#64748b; padding:5px;">${t.favTitle}</div>`;
+            
+            favorites.forEach(fav => {
+                const cmd = commands.find(c => c.title === fav);
+                if (!cmd) return;
+                
+                const displayTitle = currentLang === 'en' ? cmd.title_en : cmd.title;
+                
+                const div = document.createElement("div");
+                div.textContent = displayTitle.length > 30 ? displayTitle.substring(0, 27) + "..." : displayTitle;
+                div.title = displayTitle;
+                
+                div.onclick = () => {
+                    document.getElementById("searchInput").value = displayTitle;
+                    searchQuery = displayTitle;
+                    
+                    currentCategory = "all";
+                    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                    document.querySelector(".tab-btn[data-cat='all']").classList.add("active");
+                    
+                    renderContent();
+                };
+                container.appendChild(div);
+            });
+            if (favorites.length === 0) {
+                const empty = document.createElement("div");
+                empty.textContent = t.favEmpty;
+                empty.style.color = "#475569";
+                empty.style.padding = "5px";
+                container.appendChild(empty);
+            }
+        }
+
+        function updateStatsBadge() {
+            const container = document.getElementById("statsBadge");
+            const t = i18n[currentLang];
+            if (container) {
+                container.innerHTML = `
+                    <span class="stat-item">${t.statTotal} ${commands.length}</span>
+                    <span class="stat-item">${t.statFavs} ${favorites.length}</span>
+                    <span class="stat-item">🩺 HEALTHCHECK</span>
+                    <span class="stat-item badge-gold">${t.statBadge}</span>
+                `;
+            }
+        }
+
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return "";
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === "&") return "&amp;";
+                if (m === "<") return "&lt;";
+                if (m === ">") return "&gt;";
+                return m;
+            });
+        }
+
+        function highlightText(text, query) {
+            if (!query || query.trim() === "") return escapeHtml(text);
+            try {
+                const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+                return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+            } catch(e) {
+                return escapeHtml(text);
+            }
+        }
+
+        function filterCommands() {
+            return commands.filter(cmd => {
+                const matchCat = currentCategory === "all" || cmd.category === currentCategory;
+                const matchSearch = searchQuery === "" || 
+                    cmd.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    cmd.title_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    cmd.command.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    cmd.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    cmd.description_en.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchCat && matchSearch;
+            });
+        }
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = i18n[currentLang].copied;
+                setTimeout(() => { btn.textContent = originalText; }, 1500);
+            });
+        }
+
+        function exportToJSON() {
+            const data = { exportedAt: new Date().toISOString(), favorites, totalCommands: commands.length, allCommands: commands };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `docker-guide-${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportToMarkdown() {
+            const t = i18n[currentLang];
+            let md = `# 🐳 Docker Navigator\n\n*Exported: ${new Date().toLocaleString()}*\n\n## ${t.favTitle} (${favorites.length})\n\n`;
+            favorites.forEach(fav => {
+                const cmd = commands.find(c => c.title === fav);
+                if (cmd) {
+                    const cTitle = currentLang === 'en' ? cmd.title_en : cmd.title;
+                    md += `- **${cTitle}**: \`${cmd.command}\`\n`;
+                }
+            });
+            md += `\n## 📋 ${t.tabAll} (${commands.length})\n\n`;
+            const categories = ["containers", "images", "dockerfile", "compose", "volumes", "network", "advanced"];
+            
+            for (const cat of categories) {
+                md += `### ${categoryTitles[cat][currentLang]}\n\n`;
+                commands.filter(c => c.category === cat).forEach(cmd => {
+                    const cTitle = currentLang === 'en' ? cmd.title_en : cmd.title;
+                    const cDesc = currentLang === 'en' ? cmd.description_en : cmd.description;
+                    md += `- **${cTitle}**: \`${cmd.command}\`\n  - ${cDesc}\n`;
+                });
+                md += `\n`;
+            }
+            const blob = new Blob([md], { type: "text/markdown" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `docker-guide-${new Date().toISOString().slice(0,19)}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function getIconForCategory(cat) {
+            const icons = { containers: "📦", images: "🖼️", dockerfile: "🐳", compose: "🔗", volumes: "💾", network: "🌐", advanced: "🔧" };
+            return icons[cat] || "💡";
+        }
+
+        function renderContent() {
+            const container = document.getElementById("categoriesContainer");
+            if (!container) return;
+            const t = i18n[currentLang];
+
+            const filtered = filterCommands();
+            
+            const filteredSchemas = schemas.filter(s => {
+                if (!searchQuery) return true;
+                const q = searchQuery.toLowerCase();
+                return s.title.toLowerCase().includes(q) || s.title_en.toLowerCase().includes(q) || 
+                       s.diagram.toLowerCase().includes(q) || s.diagram_en.toLowerCase().includes(q);
+            });
+
+            const searchStats = document.getElementById("searchStats");
+            if (searchStats) {
+                const totalMatches = currentCategory === "schemas" ? filteredSchemas.length : (currentCategory === "all" ? filtered.length + filteredSchemas.length : filtered.length);
+                if (searchQuery) searchStats.innerHTML = `${t.foundItems} ${totalMatches} ${t.itemsQuery} "${escapeHtml(searchQuery)}"`;
+                else searchStats.innerHTML = `${t.totalLabel} ${commands.length} | ${t.statFavs} ${favorites.length} | 🏆`;
+            }
+
+            const categories = ["containers", "images", "dockerfile", "compose", "volumes", "network", "advanced", "schemas"];
+
+            let html = "";
+            for (const cat of categories) {
+                if (currentCategory !== "all" && currentCategory !== cat) continue;
+                
+                let hasContent = false;
+                let catHtml = `<h2 style="margin: 25px 0 15px 0; color:#60a5fa;">${categoryTitles[cat][currentLang]}</h2>`;
+                catHtml += `<div class="cmd-grid">`;
+
+                if (cat === "schemas") {
+                    if (filteredSchemas.length > 0) {
+                        hasContent = true;
+                        filteredSchemas.forEach(schema => {
+                            const sTitle = currentLang === 'en' ? schema.title_en : schema.title;
+                            const sDiag = currentLang === 'en' ? schema.diagram_en : schema.diagram;
+                            catHtml += `<div class="cmd-card">
+                                <div class="cmd-title"><span class="icon">📐</span><h3>${highlightText(sTitle, searchQuery)}</h3></div>
+                                <div class="schema-diagram">${highlightText(sDiag, searchQuery)}</div>
+                            </div>`;
+                        });
+                    }
+                } else {
+                    const catCommands = filtered.filter(c => c.category === cat);
+                    if (catCommands.length > 0) {
+                        hasContent = true;
+                        catCommands.forEach(cmd => {
+                            const isFav = favorites.includes(cmd.title); // Фактический ключ всегда русский
+                            const cTitle = currentLang === 'en' ? cmd.title_en : cmd.title;
+                            const cDesc = currentLang === 'en' ? cmd.description_en : cmd.description;
+                            
+                            const safeCommand = escapeHtml(cmd.command)
+                                .replace(/\\/g, "\\\\") 
+                                .replace(/'/g, "\\'")   
+                                .replace(/\n/g, "\\n")  
+                                .replace(/\r/g, "");    
+                            
+                            const safeTitleForFav = escapeHtml(cmd.title).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+                            const favText = isFav ? t.addedFav : t.addFav;
+
+                            catHtml += `<div class="cmd-card">
+                                <div class="cmd-title">
+                                    <span class="icon">${getIconForCategory(cmd.category)}</span>
+                                    <h3>${highlightText(cTitle, searchQuery)}</h3>
+                                    <button class="copy-btn" onclick="copyToClipboard('${safeCommand}', this)">${t.copyBtn || '📋'}</button>
+                                </div>
+                                <div class="cmd-code">${highlightText(cmd.command, searchQuery)}</div>
+                                <div class="cmd-desc">📖 ${highlightText(cDesc, searchQuery)}</div>
+                                <div style="margin-top: 10px;">
+                                    <span class="badge" onclick="toggleFavorite('${safeTitleForFav}')" style="background:${isFav ? '#f59e0b' : '#334155'}">
+                                        ${favText}
+                                    </span>
+                                </div>
+                            </div>`;
+                        });
+                    }
+                }
+                
+                catHtml += `</div>`;
+
+                if (!hasContent && currentCategory === cat) {
+                    hasContent = true;
+                    catHtml = `<h2 style="margin: 25px 0 15px 0; color:#60a5fa;">${categoryTitles[cat][currentLang]}</h2>
+                               <p style="color:#64748b;">${t.notFound} "${escapeHtml(searchQuery)}" 😔</p>`;
+                }
+
+                if (hasContent) {
+                    html += `<div class="category" data-cat="${cat}" style="display:block">
+                        ${catHtml}
+                    </div>`;
+                }
+            }
+            container.innerHTML = html;
+            updateFavoritesUI();
+        }
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            if (isDarkTheme) document.body.classList.remove("light-theme");
+            else document.body.classList.add("light-theme");
+            localStorage.setItem("dockerTheme", isDarkTheme ? "dark" : "light");
+        }
+
+        function cleanFavorites() {
+            const validTitles = commands.map(cmd => cmd.title);
+            favorites = favorites.filter(fav => validTitles.includes(fav));
+            saveFavorites();
+            renderContent();
+        }
+
+        function handleKeyboard(e) {
+            if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key === 'd') {
+                return;
+            }
+            if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement !== document.getElementById("searchInput")) {
+                e.preventDefault();
+                document.getElementById("searchInput").focus();
+            }
+            if (e.key === 'F2') {
+                e.preventDefault();
+                toggleTheme();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                document.getElementById("searchInput").value = "";
+                searchQuery = "";
+                renderContent();
+            }
+        }
+
+        function init() {
+            const savedTheme = localStorage.getItem("dockerTheme");
+            if (savedTheme === "light") {
+                isDarkTheme = false;
+                document.body.classList.add("light-theme");
+            }
+            
+            cleanFavorites();
+            applyLanguage();
+            
+            document.querySelectorAll(".tab-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    currentCategory = btn.dataset.cat;
+                    renderContent();
+                });
+            });
+            
+            const searchInput = document.getElementById("searchInput");
+            const searchBtn = document.getElementById("searchBtn");
+            const doSearch = () => { searchQuery = searchInput.value; renderContent(); };
+            searchBtn.addEventListener("click", doSearch);
+            searchInput.addEventListener("keypress", (e) => { if (e.key === "Enter") doSearch(); });
+            
+            document.getElementById("exportJsonBtn").addEventListener("click", exportToJSON);
+            document.getElementById("exportMarkdownBtn").addEventListener("click", exportToMarkdown);
+            document.getElementById("clearFavoritesBtn").addEventListener("click", () => { favorites = []; localStorage.setItem("dockerFavorites", JSON.stringify(favorites)); location.reload(); });
+            
+            document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+            document.getElementById("langToggle").addEventListener("click", toggleLanguage);
+            
+            document.addEventListener("keydown", handleKeyboard);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
